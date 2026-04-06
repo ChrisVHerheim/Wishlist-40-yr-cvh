@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Christoffer fyller 40 – Ønskeliste</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #f5f1eb; }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+
+    // PASTE YOUR FIREBASE URL HERE (no trailing slash)
+    // e.g. "https://wishlist-40-xxxx-default-rtdb.firebaseio.com"
+    const FIREBASE_URL = "https://chris-wishlist-40-default-rtdb.europe-west1.firebasedatabase.app";
+
+    const DB_PATH = FIREBASE_URL + "/wishlist.json";
+
+    const ITEMS = [
+      { id: 1,  brand: "Amundsen Sports", shop: "Moniker Sport",     name: "Chukka Sweater Mens",               tags: ["Størrelse M","100% bomull","Rugbyinspirert"],             url: "https://monikersport.no/products/12750453-chukka-sweater-mens?variant=42646661759063", sale: null },
+      { id: 2,  brand: "Devold",          shop: "devold.com",        name: "Endurance Merino JKT Man",          tags: ["Størrelse M","Night / 287A","Merinoull-jakke"],            url: "https://www.devold.com/nb-no/endurance-merino-jkt-man-cd8f7538/?color=287A&size=M", sale: null },
+      { id: 3,  brand: "Devold",          shop: "devold.com",        name: "Endurance Merino Vest Man",         tags: ["Night / 287A","Merinoull-vest"],                          url: "https://www.devold.com/nb-no/endurance-merino-vest-man-fc0c87dd/?color=287A", sale: null },
+      { id: 4,  brand: "Devold",          shop: "devold.com",        name: "Endurance Merino Pants Man",        tags: ["Størrelse L","Night / 287A","Merinoull-bukse"],           url: "https://www.devold.com/nb-no/endurance-merino-pants-man-375aa06b/", sale: null },
+      { id: 5,  brand: "Devold",          shop: "devold.com",        name: "Endurance Merino 130 T-Shirt Man",  tags: ["Farge 367A","130g merinoull"],                            url: "https://www.devold.com/nb-no/endurance-merino-130-t-shirt-man/?color=367A", sale: null },
+      { id: 6,  brand: "Devold",          shop: "devold.com",        name: "Endurance Merino Bandana",          tags: ["Night / 287A","Merinoull"],                               url: "https://www.devold.com/nb-no/endurance-merino-bandana-55527437/?color=287A", sale: null },
+      { id: 7,  brand: "Devold",          shop: "devold.com",        name: "Endurance Merino Sock",             tags: ["Størrelse 38-40","Farge 402A"],                           url: "https://www.devold.com/nb-no/endurance-merino-sock-3e54f925/?color=402A&size=38-40", sale: null },
+      { id: 8,  brand: "Devold",          shop: "devold.com",        name: "Premium Woodworker Tee Man",        tags: ["Størrelse M","Sort / 001A","Premium merinoull"],          url: "https://www.devold.com/nb-no/premium-woodworker-tee-man-3c2ceb74/?color=001A&size=M", sale: null },
+      { id: 9,  brand: "Devold",          shop: "devold.com",        name: "Endurance Merino Shorts WMN",       tags: ["Størrelse M","Farge 404A","Merinoull-shorts"],            url: "https://www.devold.com/nb-no/endurance-merino-shorts-wmn-e2c0ce2a/?color=404A&size=M", sale: null },
+      { id: 10, brand: "Devold",          shop: "Fjellsport",        name: "Expedition Arctic Pro Hoodie Man",  tags: ["Størrelse L","Wheat","Børge Ousland"],                    url: "https://www.fjellsport.no/merker/devold/devold-men-s-expedition-arctic-pro-hoodie-wheat-FS639605", sale: null },
+      { id: 11, brand: "Devold",          shop: "Milslukern",        name: "Expedition Merino Silk Zip Man",    tags: ["Størrelse S","Ink / Offwhite","Merino + silke"],          url: "https://www.milslukern.no/devold-27-expedition-merino-silk-zip-herre-p29698/ink-offwhite-s-v176475", sale: null },
+      { id: 12, brand: "LEKI",            shop: "Fjellsport",        name: "Ultratrail FX.One Superlite",       tags: ["Bright Red / Neon Yellow","137g karbon","⚠ Velg lengde"], url: "https://www.fjellsport.no/merker/leki/leki-ultratrail-fx-one-superlite-bright-red-neonyellow-naturalcarbon", sale: null },
+      { id: 13, brand: "Swix",            shop: "Bull Ski & Kajakk", name: "Performance Gore Skivott",          tags: ["Jet Black","Størrelse 9","Gore-Tex Windstopper"],         url: "https://bull-ski-kajakk.no/klaer/hansker-og-votter/skivotter/swix-performance-gore-skivott", sale: "-50% — 500,- (fra 1 000,-)" },
+      { id: 14, brand: "Swix",            shop: "Bull Ski & Kajakk", name: "Performance Gore Skihanske Dame",   tags: ["Jet Black","Størrelse 9","Gore-Tex Windstopper"],         url: "https://bull-ski-kajakk.no/klaer/hansker-og-votter/skihansker/swix-performance-gore-skihanske-dame", sale: "-50% — 500,- (fra 1 000,-)" },
+    ];
+
+    async function dbRead() {
+      try {
+        const res = await fetch(DB_PATH);
+        const data = await res.json();
+        return data || {};
+      } catch { return {}; }
+    }
+
+    async function dbWrite(purchased) {
+      try {
+        await fetch(DB_PATH, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(purchased),
+        });
+      } catch (e) { console.error("Sync failed", e); }
+    }
+
+    function Wishlist() {
+      const [purchased, setPurchased]       = useState({});
+      const [inputName, setInputName]       = useState("");
+      const [buyerName, setBuyerName]       = useState("");
+      const [showNamePrompt, setShowNamePrompt] = useState(null);
+      const [loaded, setLoaded]             = useState(false);
+      const [syncing, setSyncing]           = useState(false);
+
+      async function fetchState() {
+        const data = await dbRead();
+        setPurchased(data);
+        setLoaded(true);
+      }
+
+      useEffect(() => {
+        fetchState();
+        const interval = setInterval(fetchState, 4000);
+        return () => clearInterval(interval);
+      }, []);
+
+      function handleToggle(item) {
+        if (purchased[item.id]) {
+          const updated = { ...purchased };
+          delete updated[item.id];
+          setPurchased(updated);
+          setSyncing(true);
+          dbWrite(updated).finally(() => setSyncing(false));
+        } else {
+          setShowNamePrompt(item);
+          setInputName(buyerName);
+        }
+      }
+
+      async function confirmPurchase() {
+        if (!showNamePrompt) return;
+        const name = inputName.trim() || "Anonym";
+        setBuyerName(name);
+        const updated = {
+          ...purchased,
+          [showNamePrompt.id]: { name, time: new Date().toLocaleDateString("nb-NO") },
+        };
+        setPurchased(updated);
+        setShowNamePrompt(null);
+        setInputName("");
+        setSyncing(true);
+        await dbWrite(updated);
+        setSyncing(false);
+      }
+
+      const bought = Object.keys(purchased).length;
+      const total  = ITEMS.length;
+
+      return (
+        <div style={{ fontFamily: "'Georgia', serif", background: "#f5f1eb", minHeight: "100vh" }}>
+
+          {/* Header */}
+          <div style={{ background: "#1a1714", color: "#f5f1eb", padding: "40px 24px 32px", textAlign: "center" }}>
+            <p style={{ fontSize: 11, letterSpacing: 4, textTransform: "uppercase", color: "#7a7570", marginBottom: 12, fontFamily: "system-ui" }}>
+              Ønskeliste 2026
+            </p>
+            <h1 style={{ fontSize: "clamp(32px, 7vw, 56px)", lineHeight: 1.05 }}>
+              Christoffer fyller <em style={{ color: "#c8502a", fontStyle: "italic" }}>40</em>
+            </h1>
+            <p style={{ fontSize: 13, color: "#7a7570", marginTop: 10, fontFamily: "system-ui" }}>
+              Klikk på et produkt for å gå til butikken · Kryss av når du har kjøpt
+            </p>
+            <div style={{ marginTop: 20, display: "flex", alignItems: "center", justifyContent: "center", gap: 12 }}>
+              <div style={{ height: 4, width: 160, background: "#333", borderRadius: 2, overflow: "hidden" }}>
+                <div style={{ height: "100%", width: `${(bought / total) * 100}%`, background: "#c8502a", borderRadius: 2, transition: "width 0.4s ease" }} />
+              </div>
+              <span style={{ fontSize: 12, color: "#7a7570", fontFamily: "system-ui" }}>
+                {bought} av {total} kjøpt
+                {syncing && <span style={{ marginLeft: 6, opacity: 0.5 }}>↑</span>}
+              </span>
+            </div>
+          </div>
+
+          {/* List */}
+          <div style={{ maxWidth: 680, margin: "0 auto", padding: "24px 16px 60px" }}>
+            {!loaded ? (
+              <p style={{ textAlign: "center", color: "#7a7570", fontFamily: "system-ui", fontSize: 14, marginTop: 40 }}>Laster...</p>
+            ) : (
+              ITEMS.map((item, i) => {
+                const isBought = !!purchased[item.id];
+                const buyer    = purchased[item.id];
+                return (
+                  <div key={item.id} style={{ background: isBought ? "#eee9e0" : "#fdfaf6", border: `1px solid ${isBought ? "#c8502a33" : "#e0d9d0"}`, borderLeft: `3px solid ${isBought ? "#c8502a" : "#e0d9d0"}`, borderRadius: 3, marginBottom: 2, padding: "16px 18px", display: "flex", alignItems: "flex-start", gap: 14, opacity: isBought ? 0.75 : 1, transition: "all 0.2s", animation: `fadeUp 0.4s ${i * 0.03}s both` }}>
+                    <span style={{ fontSize: 18, color: "#d0c9c0", minWidth: 26, fontStyle: "italic", lineHeight: 1.2, marginTop: 2 }}>
+                      {String(item.id).padStart(2, "0")}
+                    </span>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ fontSize: 10, letterSpacing: 2, textTransform: "uppercase", color: "#9a9590", fontFamily: "system-ui", marginBottom: 3 }}>
+                        {item.brand} · {item.shop}
+                      </div>
+                      <div style={{ fontSize: 16, fontWeight: "bold", color: "#1a1714", marginBottom: 6, textDecoration: isBought ? "line-through" : "none", textDecorationColor: "#c8502a" }}>
+                        {item.name}
+                      </div>
+                      <div style={{ display: "flex", flexWrap: "wrap", gap: 5 }}>
+                        {item.tags.map(t => (
+                          <span key={t} style={{ fontSize: 11, background: "#ece7df", color: "#7a7570", padding: "2px 7px", borderRadius: 2, fontFamily: "system-ui" }}>{t}</span>
+                        ))}
+                        {item.sale && (
+                          <span style={{ fontSize: 11, background: "#f0e6df", color: "#c8502a", padding: "2px 7px", borderRadius: 2, fontFamily: "system-ui", fontWeight: 600 }}>🔥 {item.sale}</span>
+                        )}
+                      </div>
+                      {isBought && buyer && (
+                        <div style={{ marginTop: 6, fontSize: 11, color: "#c8502a", fontFamily: "system-ui" }}>
+                          ✓ Kjøpt av <strong>{buyer.name}</strong> ({buyer.time})
+                        </div>
+                      )}
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 6, flexShrink: 0 }}>
+                      <a href={item.url} target="_blank" rel="noreferrer" style={{ fontSize: 11, letterSpacing: 1.5, textTransform: "uppercase", color: "#7a7570", border: "1px solid #e0d9d0", padding: "3px 9px", borderRadius: 2, textDecoration: "none", fontFamily: "system-ui", whiteSpace: "nowrap" }}>
+                        Se produkt →
+                      </a>
+                      <button onClick={() => handleToggle(item)} style={{ fontSize: 11, letterSpacing: 1, textTransform: "uppercase", color: isBought ? "#c8502a" : "#fff", background: isBought ? "transparent" : "#1a1714", border: isBought ? "1px solid #c8502a" : "1px solid #1a1714", padding: "3px 9px", borderRadius: 2, cursor: "pointer", fontFamily: "system-ui", whiteSpace: "nowrap" }}>
+                        {isBought ? "Angre" : "Jeg kjøper!"}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })
+            )}
+          </div>
+
+          {/* Name modal */}
+          {showNamePrompt && (
+            <div style={{ position: "fixed", inset: 0, background: "rgba(26,23,20,0.7)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 100, padding: 24 }} onClick={() => setShowNamePrompt(null)}>
+              <div style={{ background: "#fdfaf6", borderRadius: 4, padding: 28, maxWidth: 360, width: "100%", boxShadow: "0 20px 60px rgba(0,0,0,0.3)" }} onClick={e => e.stopPropagation()}>
+                <p style={{ fontSize: 11, letterSpacing: 3, textTransform: "uppercase", color: "#7a7570", fontFamily: "system-ui", marginBottom: 8 }}>Registrer kjøp</p>
+                <p style={{ fontSize: 17, fontWeight: "bold", marginBottom: 4, color: "#1a1714" }}>{showNamePrompt.name}</p>
+                <p style={{ fontSize: 13, color: "#7a7570", fontFamily: "system-ui", marginBottom: 20 }}>Hvem er det som kjøper dette?</p>
+                <input
+                  autoFocus
+                  value={inputName}
+                  onChange={e => setInputName(e.target.value)}
+                  onKeyDown={e => e.key === "Enter" && confirmPurchase()}
+                  placeholder="Navn..."
+                  style={{ width: "100%", padding: "10px 12px", border: "1px solid #e0d9d0", borderRadius: 3, fontSize: 15, fontFamily: "system-ui", background: "#f5f1eb", marginBottom: 14, outline: "none" }}
+                />
+                <div style={{ display: "flex", gap: 8 }}>
+                  <button onClick={confirmPurchase} style={{ flex: 1, padding: "10px", background: "#c8502a", color: "#fff", border: "none", borderRadius: 3, fontSize: 13, fontFamily: "system-ui", cursor: "pointer", letterSpacing: 1, textTransform: "uppercase" }}>Bekreft</button>
+                  <button onClick={() => setShowNamePrompt(null)} style={{ padding: "10px 16px", background: "transparent", color: "#7a7570", border: "1px solid #e0d9d0", borderRadius: 3, fontSize: 13, fontFamily: "system-ui", cursor: "pointer" }}>Avbryt</button>
+                </div>
+              </div>
+            </div>
+          )}
+
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById("root"));
+    root.render(<Wishlist />);
+  </script>
+</body>
+</html>
